@@ -40,34 +40,34 @@ const Opening = () => {
       navigate("/signin");
       return;
     }
-
+  
     try {
-      // FormData 생성 및 데이터 추가
-      const data = new FormData();
-      data.append("userId", token);
-      data.append("title", formData.title);
-      data.append("content", formData.content);
-      data.append("location", formData.city + " " + formData.district);
-      data.append("salary", formData.salary);
-      data.append("image", formData.image); // Append image file
-
+      // 데이터 객체 생성
+      const data = {
+        title: formData.title,
+        content: formData.content,
+        location: formData.city + " " + formData.district,
+        salary: formData.salary,
+        salaryType: formData.salaryType,
+      };
+  
       const response = await axios.post(
         "http://localhost:8090/mypage/jobposting",
         data,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json", // JSON 데이터 전송
           },
         }
       );
-
+  
       if (response.status === 201) {
         alert("공고가 성공적으로 등록되었습니다.");
         navigate("/mypage");
       }
     } catch (error) {
-      console.error("공고 등록 중 오류 발생:", error);
+      console.error("공고 등록 중 오류 발생:", error.response?.data || error.message);
       alert("공고 등록에 실패했습니다.");
     }
   };

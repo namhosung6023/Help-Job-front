@@ -5,8 +5,8 @@ import axios from "axios";
 
 const MyOpening = () => {
   const navigate = useNavigate();
-  const { jobId } = useParams(); // jobId를 URL에서 가져옴
-  const [applicants, setApplicants] = useState([]);
+  const { jobId } = useParams(); // URL에서 jobId를 가져옴
+  const [applicants, setApplicants] = useState([]); // 지원자 목록 상태
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,17 +20,19 @@ const MyOpening = () => {
 
       try {
         const response = await axios.get(
-          `http://localhost:8090/mypage/job/applicants`, // URL에서 jobId 사용
+          `http://localhost:8090/mypage/job/applicants?_id=${jobId}`, // jobId를 쿼리 파라미터로 전달
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        setApplicants(response.data);
-        console.log("지원자 목록:", response.data);
-        setLoading(false);
+
+        // API에서 반환된 데이터 구조에 따라 상태 업데이트
+        setApplicants(response.data.applicants);
+        console.log("지원자 목록:", response.data.applicants);
       } catch (error) {
         console.error("지원자 정보를 가져오는 중 오류가 발생했습니다:", error);
         alert("지원자 정보를 가져오는 중 오류가 발생했습니다.");
+      } finally {
         setLoading(false);
       }
     };
@@ -48,8 +50,8 @@ const MyOpening = () => {
           <ApplicantList>
             {applicants.map((applicant) => (
               <ApplicantItem
-                key={applicant.id}
-                onClick={() => navigate(`/chat?userId=${applicant.id}`)}
+                key={applicant._id} // MongoDB ObjectId 사용
+                onClick={() => navigate(`/chat?userId=${applicant._id}`)}
               >
                 {applicant.name}
               </ApplicantItem>
@@ -65,6 +67,7 @@ const MyOpening = () => {
 
 export default MyOpening;
 
+// Styled components
 const Container = styled.div`
   display: flex;
   align-items: center;

@@ -46,7 +46,7 @@ function App() {
         )}
         <MainContent>
           <Routes>
-            <Route exact path="/" element={<Main />} />
+            <Route exact path="/main" element={<Main />} />
             <Route
               path="/signin"
               element={<SignIn setLoggenIn={handleLogin} />}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import Slider from "react-slick";
@@ -9,40 +9,38 @@ import axios from "axios";
 const Main = () => {
   const [jobList, setJobList] = useState([]);
   const [resumeList, setResumeList] = useState([]);
+  const [loading, setLoading] = useState(true); // 로딩 상태 추가
   const navigate = useNavigate();
 
-  // 공고 리스트 API 호출
-  useEffect(() => {
-    const fetchJobList = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:8090/mypage/job-postings"
-        );
-        setJobList(response.data.slice(0, 3)); // 최근 공고 3개
-      } catch (error) {
-        console.error("공고 리스트 불러오기 중 오류 발생:", error);
-      }
-    };
+  // 공고 및 이력서 API 호출 함수
+  const fetchData = async (url, setter) => {
+    try {
+      const response = await axios.get(url);
+      console.log("Fetched data:", response.data); // 응답 데이터 확인
+      setter(response.data);
+    } catch (error) {
+      console.error("데이터 불러오기 중 오류 발생:", error);
+      alert("데이터를 불러오지 못했습니다. 다시 시도해주세요.");
+    }
+  };
 
-    fetchJobList();
+  // 공고 및 이력서 데이터 가져오기
+  useEffect(() => {
+    setLoading(true); // 데이터 로딩 시작
+    fetchData("http://localhost:8090/mypage/job-postings", (data) =>
+      setJobList(data.slice(0, 5)) // 최근 공고 5개만 가져옴
+    );
+    fetchData("http://localhost:8090/mypage/resumes", (data) => {
+      setResumeList(data);
+      setLoading(false); // 데이터 로딩 끝
+    });
   }, []);
 
-  // 이력서 리스트 API 호출
-  useEffect(() => {
-    const fetchResumeList = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:8090/mypage/resumes"
-        );
-        setResumeList(response.data);
-      } catch (error) {
-        console.error("이력서 리스트 불러오기 중 오류 발생:", error);
-      }
-    };
+  // 클릭 이벤트 핸들러
+  const handleJobClick = useCallback((id) => navigate(`/jobdetail/${id}`), [navigate]);
+  const handleResumeClick = useCallback((id) => navigate(`/resume/${id}`), [navigate]);
 
-    fetchResumeList();
-  }, []);
-
+  // 슬라이더 설정
   const settings = {
     dots: true,
     infinite: true,
@@ -56,40 +54,44 @@ const Main = () => {
   return (
     <Container>
       <Search />
-
+      {/* 인기 공고 섹션 */}
       <Service>
         <ServiceTitle>인기 공고</ServiceTitle>
         <ServiceContent>
-          <StyledSlider {...settings}>
-            {jobList.map((job, index) => (
-              <Slide
-                key={index}
-                onClick={() => navigate(`/jobdetail/${job.id}`)}
-              >
-                <SlideImageContainer>
-                  <SlideImage
-                    src={job.image || "images/no-image.png"}
-                    alt={job.title}
-                  />
-                  <JobTitle>{job.title}</JobTitle>
-                </SlideImageContainer>
-              </Slide>
-            ))}
-          </StyledSlider>
+          {loading ? (
+            <LoadingSpinner>로딩 중...</LoadingSpinner>
+          ) : jobList.length > 0 ? (
+            <StyledSlider {...settings}>
+              {jobList.map((job) => (
+                <Slide key={job._id} onClick={() => handleJobClick(job._id)}>
+                  <SlideImageContainer>
+                    <SlideImage src={job.image || "/images/no-image.png"} alt={job.title} />
+                    <JobTitle>{job.title}</JobTitle>
+                  </SlideImageContainer>
+                </Slide>
+              ))}
+            </StyledSlider>
+          ) : (
+            <NoData>등록된 공고가 없습니다.</NoData>
+          )}
         </ServiceContent>
       </Service>
 
+      {/* 이력서 섹션 */}
       <ResumeSection>
         <ResumeTitle>구직 중인 공고</ResumeTitle>
         <ResumeContent>
-          {resumeList.map((resume, index) => (
-            <ResumeItem
-              key={index}
-              onClick={() => navigate(`/resume/${resume.id}`)}
-            >
-              {resume.title}
-            </ResumeItem>
-          ))}
+          {loading ? (
+            <LoadingSpinner>로딩 중...</LoadingSpinner>
+          ) : resumeList.length > 0 ? (
+            resumeList.map((resume) => (
+              <ResumeItem key={resume._id} onClick={() => handleResumeClick(resume._id)}>
+                {resume.title}
+              </ResumeItem>
+            ))
+          ) : (
+            <NoData>등록된 이력서가 없습니다.</NoData>
+          )}
         </ResumeContent>
       </ResumeSection>
     </Container>
@@ -98,8 +100,9 @@ const Main = () => {
 
 export default Main;
 
+// 스타일 컴포넌트
 const Container = styled.div`
-  display: grid;
+  display : flex;
   justify-content: center;
   align-items: center;
   width: 100vw;
@@ -203,4 +206,19 @@ const ResumeItem = styled.div`
   &:hover {
     background-color: #e9e9e9;
   }
+`;
+
+const NoData = styled.div`
+  font-size: 18px;
+  color: #999;
+  text-align: center;
+  margin-top: 20px;
+`;
+
+const LoadingSpinner = styled.div`
+  font-size: 18px;
+  color: #333;
+  text-align: center;
+  margin-top: 20px;
+  font-weight: bold;
 `;

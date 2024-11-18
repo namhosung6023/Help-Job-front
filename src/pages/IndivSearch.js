@@ -45,8 +45,19 @@ const IndivSearch = () => {
           >
             <ResumeTitle>{resume.name}님의 이력서</ResumeTitle>
             <ResumeDescription>
-              {resume.resume || "이력서 내용이 없습니다."}
+              {/* resume.resume가 객체라면 이를 JSON 문자열로 변환 */}
+              {typeof resume.resume === "object"
+                ? JSON.stringify(resume.resume) // 객체라면 JSON.stringify로 문자열 변환
+                : resume.resume || "이력서 내용이 없습니다."}
             </ResumeDescription>
+            {/* resume.work가 객체일 경우 */}
+            {resume.work && (
+              <ResumeDescription>
+                {typeof resume.work === "object"
+                  ? JSON.stringify(resume.work)
+                  : resume.work}
+              </ResumeDescription>
+            )}
           </ResumeItem>
         ))}
       </ResumeList>

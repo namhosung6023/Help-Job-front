@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import axios from "axios";
 
@@ -9,6 +9,35 @@ const Resume = () => {
   const [selectedWorks, setSelectedWorks] = useState([]);
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
+  const [userId, setUserId] = useState(null); // userId 상태 추가
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+
+      try {
+        const response = await axios.get("http://localhost:8090/mypage/user-info", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        
+        // 프로필 정보에서 userId 추출하여 상태에 저장
+        const profile = response.data;
+        setUserId(profile.id); // userId 상태 업데이트
+        setName(profile.name); // name 설정 (선택사항)
+      } catch (error) {
+        console.error("프로필 정보를 가져오는 중 오류 발생:", error);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const handleCheckboxChange = (event) => {
     const { value } = event.target;
@@ -20,11 +49,16 @@ const Resume = () => {
   };
 
   const handleSaveResume = async () => {
+    if (!userId) {
+      alert("사용자 정보를 가져올 수 없습니다.");
+      return;
+    }
+
     try {
       const response = await axios.post(
         "http://localhost:8090/mypage/submit-resume",
         {
-          userId: "사용자 ID", // 사용자 ID를 실제로 설정하세요.
+          userId, // userId를 실제로 설정
           title,
           skill: skills,
           place: `${city} ${district}`,
@@ -106,6 +140,7 @@ const Resume = () => {
 export default Resume;
 
 // 스타일 컴포넌트는 기존 코드와 동일합니다.
+
 
 const Container = styled.div`
   display: flex;

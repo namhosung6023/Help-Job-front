@@ -7,6 +7,7 @@ const JobDetail = () => {
   const navigate = useNavigate();
   const { jobId } = useParams();
   const [jobData, setJobData] = useState(null);
+  const [userInfo, setUserInfo] = useState(null); // Store user info
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
@@ -22,16 +23,35 @@ const JobDetail = () => {
       }
     };
 
+    const fetchUserInfo = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8090/mypage/user-info", 
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        );
+        setUserInfo(response.data); // Set the full user info object
+      } catch (error) {
+        console.error("사용자 정보 가져오기 오류:", error);
+        alert("사용자 정보를 가져오는 데 실패했습니다.");
+      }
+    };
+
     fetchJobDetail();
+    fetchUserInfo(); // Fetch user info on component mount
   }, [jobId]);
 
-  if (!jobData) return <div>로딩 중...</div>;
+  if (!jobData || !userInfo) return <div>로딩 중...</div>;
 
   const handleApply = async () => {
     try {
+      // Send the jobId as _id and userId as userInfo.id
       await axios.post(
         "http://localhost:8090/mypage/apply",
-        { jobId, userId },
+        { _id: jobId, userId: userInfo.id }, // Pass jobId and userId
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -39,11 +59,12 @@ const JobDetail = () => {
         }
       );
       alert("지원이 완료되었습니다.");
+      console.log("지원하기 페이지 userid:", userInfo.id)
 
       // After successful application, navigate to chat
       navigate("/chat", {
         state: {
-          senderId: userId,
+          senderId: userInfo.id,
           receiverId: jobData.postedBy._id,
         },
       });

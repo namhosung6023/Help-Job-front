@@ -7,7 +7,7 @@ const MyPage = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState({});
   const [jobPostings, setJobPostings] = useState([]);
-  const [resumes, setResumes] = useState([]);
+  const [resumes, setResumes] = useState([]); // 이력서 배열 상태
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,6 +20,7 @@ const MyPage = () => {
       }
 
       try {
+        // 사용자 정보 가져오기
         const profileRes = await axios.get(
           "http://localhost:8090/mypage/user-info",
           {
@@ -29,21 +30,29 @@ const MyPage = () => {
             },
           }
         );
-
         const data = profileRes.data;
         setProfile(data);
+        console.log("사용자 정보", data);
 
+        // 작성한 공고 가져오기
         const jobRes = await axios.get(
           `http://localhost:8090/mypage/job-posts?userId=${data.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setJobPostings(jobRes.data);
 
+        // 이력서 가져오기
         const resumeRes = await axios.get(
-          "http://localhost:8090/mypage/resumes",
+          `http://localhost:8090/mypage/resume?userId=${data.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setResumes(resumeRes.data);
+        console.log("이력서 응답", resumeRes.data);
+
+        // 응답에서 이력서를 배열로 변환
+        const resumeData = resumeRes.data.resume
+          ? [resumeRes.data.resume] // 이력서를 배열로 변환
+          : [];
+        setResumes(resumeData);
 
         setLoading(false);
       } catch (error) {
@@ -86,7 +95,6 @@ const MyPage = () => {
           ) : (
             <NoData>등록된 공고가 없습니다.</NoData>
           )}
-
           <RegisterButton onClick={() => navigate("/opening")}>
             공고 등록
           </RegisterButton>
@@ -96,12 +104,14 @@ const MyPage = () => {
           <SectionTitle>나의 이력서 관리</SectionTitle>
           {resumes.length > 0 ? (
             <ResumeList>
-              {resumes.map((resume) => (
+              {resumes.map((resume, index) => (
                 <ResumeItem
-                  key={resume._id}
-                  onClick={() => navigate(`/ResumeDetail/${resume._id}`)}
+                  key={index}
+                  onClick={() => alert(`이력서 클릭: ${resume.title}`)}
                 >
-                  {resume.title}
+                  <p>제목: {resume.title}</p>
+                  <p>위치: {resume.place}</p>
+                  <p>경력: {resume.work.join(", ")}</p>
                 </ResumeItem>
               ))}
             </ResumeList>
@@ -119,10 +129,7 @@ const MyPage = () => {
 
 export default MyPage;
 
-// styled-components는 그대로 유지합니다...
-
-// styled-components remain the same...
-
+// Styled components
 const Container = styled.div`
   display: flex;
   align-items: center;
